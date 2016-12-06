@@ -18,10 +18,10 @@ class SplunkHTTPHandler(logging.Handler):
 
     def __getSplunkEventDict(self, record):
         hostname = socket.gethostname()
-        event = record.__dict__
+
         splunk_event = {
             "host": hostname,
-            "source": event['module']
+            "source": record.module
         }
 
         return splunk_event
@@ -32,11 +32,9 @@ class SplunkHTTPHandler(logging.Handler):
         """
         splunk_event = self.__getSplunkEventDict(record)
 
-        event = record.__dict__
-
         splunk_event["event"] = {
-            "message": event['msg'],
-            "level": event['levelname']
+            "message": record.msg,
+            "level": record.levelname
         }
         return splunk_event
 
