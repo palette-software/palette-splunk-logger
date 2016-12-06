@@ -40,6 +40,14 @@ class SplunkHTTPHandler(logging.Handler):
         }
         return splunk_event
 
+    def mapLogRecordWithFormat(self, record):
+        splunk_event = self.__getSplunkEventDict(record)
+        splunk_event["event"] = self.format(record)
+        return splunk_event
+
+    def setFormatter(self, fmt):
+        super().setFormatter(fmt)
+
     def emit(self, record):
         """
         Emit a record.
