@@ -65,12 +65,6 @@ class SplunkHTTPHandler(logging.Handler):
             data = json.dumps(self.mapLogRecordWithFormat(record))
 
             h.putrequest('POST', self.url)
-            # support multiple hosts on one IP address...
-            # need to strip optional :port from host, if present
-            i = host.find(":")
-            if i >= 0:
-                host = host[:i]
-            h.putheader("Host", host)
             h.putheader("Content-type",
                         "application/x-www-form-urlencoded")
             h.putheader("Content-length", str(len(data)))
