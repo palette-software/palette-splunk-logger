@@ -16,20 +16,27 @@ class SplunkHTTPHandler(logging.Handler):
         self.secure = secure
         self.context = context
 
+    def __getSplunkEventDict(self, record):
+        hostname = socket.gethostname()
+        event = record.__dict__
+        splunk_event = {
+            "host": hostname,
+            "source": event['module']
+        }
+
+        return splunk_event
+
     def mapLogRecord(self, record):
         """
 
         """
-        hostname = socket.gethostname()
+        splunk_event = self.__getSplunkEventDict(record)
+
         event = record.__dict__
-        splunk_event = {
-            "time": event['created'],
-            "host": hostname,
-            "source": event['module'],
-            "event": {
-                "message": event['msg'],
-                "level": event['levelname']
-            }
+
+        splunk_event["event"] = {
+            "message": event['msg'],
+            "level": event['levelname']
         }
         return splunk_event
 

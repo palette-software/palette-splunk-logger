@@ -22,8 +22,10 @@ class TestSplunkHTTPHandler(TestCase):
                'module': 'test_logger'})
         self.splunk_event = self.splunk_http_handler.mapLogRecord(self.logrecord)
 
-    def test_event_has_time_and_source(self):
-        self.assertEqual(1480955547.678524, self.splunk_event["time"])
+    def test_event_has_no_time(self):
+        self.assertNotIn('time', self.splunk_event)
+
+    def test_event_has_source(self):
         self.assertEqual('test_logger', self.splunk_event["source"])
 
     @patch('socket.gethostname')
