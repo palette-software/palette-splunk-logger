@@ -61,7 +61,9 @@ class SplunkHTTPHandler(logging.Handler):
                 h = http.client.HTTPSConnection(host, context=self.context)
             else:
                 h = http.client.HTTPConnection(host)
-            data = json.dumps(self.mapLogRecord(record))
+
+            data = json.dumps(self.mapLogRecordWithFormat(record))
+
             h.putrequest('POST', self.url)
             # support multiple hosts on one IP address...
             # need to strip optional :port from host, if present
