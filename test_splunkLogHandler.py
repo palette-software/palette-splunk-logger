@@ -6,7 +6,7 @@ import logging
 import splunkloghandler
 
 
-class TestSplunkHTTPHandler(TestCase):
+class TestSplunkLogHandler(TestCase):
     def setUp(self):
         self.splunk_http_handler = splunkloghandler.SplunkLogHandler('host', 'url', 'token')
         self.logrecord = logging.LogRecord('simple_example',
