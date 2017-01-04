@@ -67,7 +67,6 @@ class SplunkLogHandler(logging.Handler):
         h.send(data.encode('utf-8'))
         return h.getresponse()
 
-
     def emit(self, record):
         """
         Emit a record.
@@ -92,7 +91,6 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
         self.queue = queue.Queue()
         self._stop = threading.Event()
         self._thread = None
-        self._killThread = None
 
         self.start()
 
