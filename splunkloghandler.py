@@ -4,9 +4,12 @@ import logging.handlers
 import socket
 import queue
 import threading
+from datetime import datetime, timedelta
 
+StopTimeoutSeconds = 10
+BatchSize = 100
 
-class SplunkHTTPHandler(logging.Handler):
+class SplunkLogHandler(logging.Handler):
     """
     A class which sends records to a Splunk server via its HTTP Event Collector
     interface
@@ -24,22 +27,9 @@ class SplunkHTTPHandler(logging.Handler):
         hostname = socket.gethostname()
 
         splunk_event = {
-            "host": hostname,
-            "source": record.module
+            "host": hostname
         }
 
-        return splunk_event
-
-    def mapLogRecord(self, record):
-        """
-
-        """
-        splunk_event = self.__getSplunkEventDict(record)
-
-        splunk_event["event"] = {
-            "message": record.msg,
-            "level": record.levelname
-        }
         return splunk_event
 
     def mapLogRecordWithFormat(self, record):
@@ -55,6 +45,9 @@ class SplunkHTTPHandler(logging.Handler):
         return data
 
     def send(self, data):
+        if data is None or data == "":
+            return None
+
         import http.client
         host = self.host
         if self.secure:
@@ -86,7 +79,7 @@ class SplunkHTTPHandler(logging.Handler):
             self.handleError(record)
 
 
-class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
+class AsyncSplunkLogHandler(SplunkLogHandler):
     _sentinel = None
 
     def __init__(self, host, url, token=None, secure=False, context=None):
@@ -109,27 +102,34 @@ class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
         This method runs on a separate, internal thread.
         The thread will terminate if it sees a sentinel object in the queue.
         """
-        while not self._stop.isSet():
-            try:
-                record = self.dequeue(True)
-                if record is self._sentinel:
-                    break
-                self.send(record)
-            except queue.Empty:
-                pass
-        # There might still be records in the queue.
+        payload = None
+        stop_noticed = None
         while True:
             try:
-                record = self.dequeue(False)
-                if record is self._sentinel:
-                    break
-                self.send(record)
-            except queue.Empty:
-                break
+                if self._stop.is_set():
+                    if self.queue.empty():
+                        break
+
+                    # Store when we first met the stop sign so that we can time out later
+                    if stop_noticed is None:
+                        stop_noticed = datetime.now()
+
+                    # Check if we have reached the timeout period
+                    if datetime.now() - stop_noticed > timedelta(seconds=StopTimeoutSeconds):
+                        break
+
+                if payload is None:
+                    payload = self.dequeue(True)
+
+                # Todo check response
+                response = self.send(payload)
+
+                payload = None
+            except Exception as err:
+                pass
 
     def close(self):
         self.stop()
-
         super().close()
 
     def emit(self, record):
@@ -160,7 +160,19 @@ class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
         The base implementation uses get. You may want to override this method
         if you want to use timeouts or work with custom queue implementations.
         """
-        return self.queue.get(block)
+        payload = ""
+        count = 0
+        while count <= BatchSize:
+            try:
+                message = self.queue.get(block)
+                block = False
+                if message is not self._sentinel:
+                    payload += message
+                    count += 1
+            except queue.Empty:
+                break
+
+        return payload
 
     def enqueue_sentinel(self):
         """
