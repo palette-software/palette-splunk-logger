@@ -4,7 +4,9 @@ import logging.handlers
 import socket
 import queue
 import threading
+from datetime import datetime, timedelta
 
+TimeoutSeconds = 10
 
 class SplunkHTTPHandler(logging.Handler):
     """
@@ -55,6 +57,7 @@ class SplunkHTTPHandler(logging.Handler):
         return data
 
     def send(self, data):
+        print("Sending data: ", data)
         import http.client
         host = self.host
         if self.secure:
@@ -73,6 +76,7 @@ class SplunkHTTPHandler(logging.Handler):
 
         h.send(data.encode('utf-8'))
         return h.getresponse()
+
 
     def emit(self, record):
         """
@@ -98,6 +102,7 @@ class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
         self.queue = queue.Queue()
         self._stop = threading.Event()
         self._thread = None
+        self._killThread = None
 
         self.start()
 
@@ -109,25 +114,36 @@ class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
         This method runs on a separate, internal thread.
         The thread will terminate if it sees a sentinel object in the queue.
         """
-        while not self._stop.isSet():
-            try:
-                record = self.dequeue(True)
-                if record is self._sentinel:
-                    break
-                self.send(record)
-            except queue.Empty:
-                pass
-        # There might still be records in the queue.
+        print("Monitor thread start")
+        payload = None
+        stop_noticed = None
         while True:
             try:
-                record = self.dequeue(False)
-                if record is self._sentinel:
+                if self._stop.is_set():
+                    if self.queue.empty():
+                        break
+
+                    # Store when we first met the stop sign so that we can time out later
+                    if stop_noticed is None:
+                        stop_noticed = datetime.now()
+
+                    # Check if we have reached the timeout period
+                    if datetime.now() - stop_noticed > timedelta(seconds=TimeoutSeconds):
+                        break
+
+                if payload is None:
+                    payload = self.dequeue(True)
+                if payload is self._sentinel:
                     break
-                self.send(record)
+                self.send(payload)
+                payload = None
             except queue.Empty:
-                break
+                pass
+            except Exception:
+                pass
 
     def close(self):
+        print("Close")
         self.stop()
 
         super().close()
@@ -191,7 +207,7 @@ class AsyncSplunkHTTPHandler(SplunkHTTPHandler):
         Note that if you don't call this before your application exits, there
         may be some records still left on the queue, which won't be processed.
         """
-        self._stop.set()
         self.enqueue_sentinel()
+        self._stop.set()
         self._thread.join()
         self._thread = None
