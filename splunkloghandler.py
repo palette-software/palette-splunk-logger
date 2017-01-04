@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 StopTimeoutSeconds = 10
 BatchSize = 100
 
+
 class SplunkLogHandler(logging.Handler):
     """
     A class which sends records to a Splunk server via its HTTP Event Collector
@@ -144,22 +145,9 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
             self.handleError(record)
 
     def enqueue(self, record):
-        """
-        Enqueue a record.
-
-        The base implementation uses put_nowait. You may want to override
-        this method if you want to use blocking, timeouts or custom queue
-        implementations.
-        """
         self.queue.put_nowait(record)
 
     def dequeue(self, block):
-        """
-        Dequeue a record and return it, optionally blocking.
-
-        The base implementation uses get. You may want to override this method
-        if you want to use timeouts or work with custom queue implementations.
-        """
         payload = ""
         count = 0
         while count <= BatchSize:
@@ -175,13 +163,6 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
         return payload
 
     def enqueue_sentinel(self):
-        """
-        This is used to enqueue the sentinel record.
-
-        The base implementation uses put_nowait. You may want to override this
-        method if you want to use timeouts or work with custom queue
-        implementations.
-        """
         self.queue.put_nowait(self._sentinel)
 
     def start(self):
