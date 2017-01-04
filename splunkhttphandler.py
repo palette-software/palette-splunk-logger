@@ -46,6 +46,30 @@ class SplunkHTTPHandler(logging.Handler):
     def setFormatter(self, fmt):
         super().setFormatter(fmt)
 
+    def prepare(self, record):
+        data = json.dumps(self.mapLogRecordWithFormat(record))
+        return data
+
+    def send(self, data):
+        import http.client
+        host = self.host
+        if self.secure:
+            h = http.client.HTTPSConnection(host, context=self.context)
+        else:
+            h = http.client.HTTPConnection(host)
+
+        h.putrequest('POST', self.url)
+        h.putheader("Content-type",
+                    "application/x-www-form-urlencoded")
+        h.putheader("Content-length", str(len(data)))
+        if self.token:
+            s = 'Splunk ' + self.token
+            h.putheader('Authorization', s)
+        h.endheaders()
+
+        h.send(data.encode('utf-8'))
+        return h.getresponse()
+
     def emit(self, record):
         """
         Emit a record.
@@ -53,25 +77,6 @@ class SplunkHTTPHandler(logging.Handler):
         Send the record to the Splunk server as a percent-encoded dictionary
         """
         try:
-            import http.client, urllib.parse
-            host = self.host
-            if self.secure:
-                h = http.client.HTTPSConnection(host, context=self.context)
-            else:
-                h = http.client.HTTPConnection(host)
-
-            data = json.dumps(self.mapLogRecordWithFormat(record))
-
-            h.putrequest('POST', self.url)
-            h.putheader("Content-type",
-                        "application/x-www-form-urlencoded")
-            h.putheader("Content-length", str(len(data)))
-            if self.token:
-                s = 'Splunk ' + self.token
-                h.putheader('Authorization', s)
-            h.endheaders()
-
-            h.send(data.encode('utf-8'))
-            response = h.getresponse()
+            self.send(self.prepare(record))
         except Exception:
             self.handleError(record)
