@@ -81,7 +81,7 @@ class SplunkLogHandler(logging.Handler):
 
 
 class AsyncSplunkLogHandler(SplunkLogHandler):
-    _sentinel = None
+    _stop_sign = None
 
     def __init__(self, host, url, token=None, secure=False, context=None):
         """
@@ -101,7 +101,7 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
         to deal with them.
 
         This method runs on a separate, internal thread.
-        The thread will terminate if it sees a sentinel object in the queue.
+        The thread will terminate if the stop event is set and the internal queue is empty
         """
         payload = None
         stop_noticed = None
@@ -154,7 +154,7 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
             try:
                 message = self.queue.get(block)
                 block = False
-                if message is not self._sentinel:
+                if message is not self._stop_sign:
                     payload += message
                     count += 1
             except queue.Empty:
@@ -162,8 +162,8 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
 
         return payload
 
-    def enqueue_sentinel(self):
-        self.queue.put_nowait(self._sentinel)
+    def enqueue_stop_sign(self):
+        self.queue.put_nowait(self._stop_sign)
 
     def start(self):
         """
@@ -185,6 +185,6 @@ class AsyncSplunkLogHandler(SplunkLogHandler):
         may be some records still left on the queue, which won't be processed.
         """
         self._stop.set()
-        self.enqueue_sentinel()
+        self.enqueue_stop_sign()
         self._thread.join()
         self._thread = None
