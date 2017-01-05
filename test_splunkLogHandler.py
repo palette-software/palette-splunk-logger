@@ -3,11 +3,12 @@ from unittest.mock import patch
 
 import logging
 
-from splunkhttphandler import SplunkHTTPHandler
+import splunkloghandler
 
-class TestSplunkHTTPHandler(TestCase):
+
+class TestSplunkLogHandler(TestCase):
     def setUp(self):
-        self.splunk_http_handler = SplunkHTTPHandler('host', 'url', 'token')
+        self.splunk_http_handler = splunkloghandler.SplunkLogHandler('host', 'url', 'token')
         self.logrecord = logging.LogRecord('simple_example',
                                            10,
                                            '/Users/spa/Git/palette-splunk-logger/test_logger.py',
@@ -29,24 +30,19 @@ class TestSplunkHTTPHandler(TestCase):
         #        'thread': 140736880042944, 'processName': 'MainProcess', 'msg': 'debug message',
         #        'pathname': '/Users/spa/Git/palette-splunk-logger/test_logger.py', 'threadName': 'MainThread',
         #        'module': 'test_logger'})
-        self.splunk_event = self.splunk_http_handler.mapLogRecord(self.logrecord)
+        self.splunk_event = self.splunk_http_handler.mapLogRecordWithFormat(self.logrecord)
 
     def test_event_has_no_time(self):
         self.assertNotIn('time', self.splunk_event)
 
-    def test_event_has_source(self):
-        self.assertEqual('test_logger', self.splunk_event["source"])
-
     @patch('socket.gethostname')
     def test_event_has_hostname(self, mock_gethostname):
         mock_gethostname.return_value = "test_host.local"
-        splunk_event = self.splunk_http_handler.mapLogRecord(self.logrecord)
+        splunk_event = self.splunk_http_handler.mapLogRecordWithFormat(self.logrecord)
         self.assertEqual("test_host.local", splunk_event["host"])
 
-    def test_event_has_the_logevent_details(self):
-        logevent = self.splunk_event["event"]
-        self.assertEqual('debug message', logevent["message"])
-        self.assertEqual("DEBUG", logevent["level"])
+    def test_event_has_the_message(self):
+        self.assertEqual('debug message', self.splunk_event["event"])
 
     def test_formatted_output_without_formatter(self):
         splunk_event = self.splunk_http_handler.mapLogRecordWithFormat(self.logrecord)
