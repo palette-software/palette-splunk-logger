@@ -54,7 +54,7 @@ logger.critical('critical message')
 
 ## Is Palette Splunk Logger supported?
 
-Palette Splunk Logger is licensed under GNU GPL. For professional support please contact developers@palettes-software.com
+Palette Splunk Logger is licensed under the MIT License. For professional support please contact developers@palettes-software.com
 
 **TODO: Clarify support part!**
 
