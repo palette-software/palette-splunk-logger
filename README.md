@@ -52,6 +52,14 @@ logger.error('error message')
 logger.critical('critical message')
 ```
 
+## How can I test-drive Palette Insight Agent?
+
+Use the example code above or you may also execute some unittests by
+
+```bash
+python3 -m unittest
+```
+
 ## Is Palette Splunk Logger supported?
 
 Palette Splunk Logger is licensed under the MIT License. For professional support please contact developers@palette-software.com
