@@ -81,6 +81,12 @@ class SplunkLogHandler(logging.Handler):
 
 
 class AsyncSplunkLogHandler(SplunkLogHandler):
+    """
+    A class which sends records to a Splunk server via its HTTP Event Collector
+    interface asynchronously.
+    The records are stored in an internal queue and are sent periodically.
+    Unsuccessful request attempts are retried until the handler is stopped.
+    """
     _stop_sign = None
 
     def __init__(self, host, url, token=None, secure=False, context=None):
