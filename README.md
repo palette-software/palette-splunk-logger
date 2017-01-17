@@ -62,8 +62,6 @@ python3 -m unittest
 
 ## Is Palette Splunk Logger supported?
 
-Palette Splunk Logger is licensed under the MIT License. For professional support please contact developers@palette-software.com
-
-**TODO: Clarify support part!**
+Palette Splunk Logger is licensed under the MIT License. For professional support please contact <developers@palette-software.com>.
 
 Any bugs discovered should be filed in the [Palette Splunk Logger Git issue tracker](https://github.com/palette-software/palette-splunk-logger/issues) or contribution is more than welcome.
