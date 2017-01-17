@@ -52,7 +52,7 @@ logger.error('error message')
 logger.critical('critical message')
 ```
 
-## How can I test-drive Palette Insight Agent?
+## How can I test-drive Palette Splunk Logger?
 
 Use the example code above or you may also execute some unittests by
 
